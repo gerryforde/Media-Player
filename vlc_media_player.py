@@ -3,6 +3,8 @@
     Author: Israel Dryer
     Modified: 2020-01-23
 
+    Updated by Gerry Forde
+
 """
 import vlc
 import pafy
