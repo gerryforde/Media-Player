@@ -6,14 +6,17 @@
 """
 import vlc
 import pafy
+import ast
 import PySimpleGUI as sg
 from sys import platform as PLATFORM
 from os import listdir
 
 PATH = './Assets/'
 BUTTON_DICT = {img[:-4].upper(): PATH + img for img in listdir(PATH)}
+CHANNELS_DICT = 'demo2.txt'
 DEFAULT_IMG = PATH + 'background2.png'
 ICON = PATH + 'player.ico'
+FAVOURITE_CHANNELS = ['ABC HD','City TV', 'BEIN 1','BEIN 2','BEIN 3','BEIN 11','BEIN 12','Sky Sports Football', 'BT Sport 1', 'Super Sports 1','Other']
 
 
 class MediaPlayer:
@@ -50,7 +53,17 @@ class MediaPlayer:
 
     def create_window(self):
         """ Create GUI instance """
-        sg.change_look_and_feel(self.theme)
+        sg.change_look_and_feel(self.theme)   
+
+        col0 = [
+            [sg.Text('Select a channel')],
+            [
+                sg.Listbox(values=(FAVOURITE_CHANNELS),
+                change_submits=True,
+                size=[25,15],
+                key='channel_selector')
+            ]
+        ]     
 
         # Column layout for media player button controls
         col1 = [[self.button('SKIP PREVIOUS', BUTTON_DICT['START']),
@@ -85,8 +98,12 @@ class MediaPlayer:
             # Button and media information layout (created above)
             [sg.Column(col1), sg.Column(col2)]]
 
+        whole_layout = [
+            [sg.Column(col0), sg.Column(main_layout)]
+        ]
+
         # Create a PySimpleGUI window from the specified parameters
-        window = sg.Window('VLC Media Player', main_layout, element_justification='center', icon=ICON, finalize=True)
+        window = sg.Window('VLC Media Player', whole_layout, element_justification='center', icon=ICON, finalize=True)
 
         # Expand the time element so that the row elements are positioned correctly
         window['TIME'].expand(expand_x=True)
@@ -211,6 +228,29 @@ class MediaPlayer:
         if self.media_list.count() > 0:
             self.play()
 
+    def load_channel(self,channel):
+        file = open(CHANNELS_DICT, "r")
+
+        contents = file.read()
+        dictionary = ast.literal_eval(contents)
+
+        file.close()
+
+        #sg.Popup(dictionary.get(channel).get("tvg-name"))
+
+        track = dictionary.get(channel).get("tvg-url")
+
+        if track is None:
+            return
+        else:
+            self.window['INFO'].update('Loading media...')
+            self.window.read(1)
+            self.add_media(track)
+        if self.media_list.count() > 0:
+            self.skip_next()
+            self.play()
+
+
     def load_playlist_from_file(self):
         """ Open text file and load to new media list. Assumes `playlist.txt` is in root directory """
 
@@ -245,7 +285,7 @@ def main():
     """ The main program function """
 
     # Create the media player
-    mp = MediaPlayer(size=(1920, 1080), scale=0.5)
+    mp = MediaPlayer(size=(1920, 1080), scale=0.8)
 
     # Main event loop
     while True:
@@ -271,6 +311,34 @@ def main():
             mp.load_single_track()
         if event == 'PLAYLIST':
             mp.load_playlist_from_file()
+        if event == 'channel_selector':
+
+            channel_id=''
+
+            if (values['channel_selector'][0] == "ABC HD"):
+                channel_id = "abcwabc.us"
+            elif (values['channel_selector'][0] == "City TV"):
+                channel_id = "citytvtoronto.ca"
+            elif (values['channel_selector'][0] == "BEIN 1"):
+                channel_id = "beINSports1.qa"
+            elif (values['channel_selector'][0] == "BEIN 2"):
+                channel_id = "beINSports2.qa"
+            elif (values['channel_selector'][0] == "BEIN 3"):
+                channel_id = "beINSports3.qa"    
+            elif (values['channel_selector'][0] == "BEIN 11"):
+                channel_id = "beINSports11.qa"
+            elif (values['channel_selector'][0] == "BEIN 12"):
+                channel_id = "beINSports12.qa"
+            elif (values['channel_selector'][0] == "Sky Sports Football"):
+                channel_id = "skysportsfootball.uk"
+            elif (values['channel_selector'][0] == "BT Sport 1"):
+                channel_id = "btsport1.uk"
+            elif (values['channel_selector'][0] == "Super Sports 1"):
+                channel_id = "SSH"
+            else:
+                channel_id = "Invalid channel chosen"
+
+            mp.load_channel(channel_id)
 
 
 if __name__ == '__main__':
